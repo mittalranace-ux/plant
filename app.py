@@ -1,49 +1,72 @@
 import streamlit as st
 import numpy as np
 from PIL import Image
-import gdown
 import tensorflow as tf
+import gdown
 import os
 
-st.set_page_config(page_title="Plant Disease Detection", page_icon="🌿")
+# ---------- PAGE CONFIG ----------
+st.set_page_config(
+    page_title="Plant Disease Detection",
+    page_icon="🌿",
+    layout="centered"
+)
 
 st.title("🌿 Plant Disease Detection App")
-st.write("Upload a leaf image for prediction")
+st.write("Upload a leaf image to detect plant disease using Deep Learning")
 
-# ---------- Download model safely ----------
+# ---------- MODEL PATH ----------
 MODEL_PATH = "model.h5"
 
+# ---------- SAFE MODEL LOADER ----------
 @st.cache_resource
 def load_model():
     if not os.path.exists(MODEL_PATH):
-        url = "YOUR_GOOGLE_DRIVE_LINK"  # 👈 replace this
+        st.info("📥 Downloading model first time... Please wait")
+
+        # 🔴 IMPORTANT: Replace with your Google Drive file link
+        url = "https://drive.google.com/uc?id=YOUR_FILE_ID"
+
         gdown.download(url, MODEL_PATH, quiet=False)
+
     return tf.keras.models.load_model(MODEL_PATH)
 
 model = load_model()
 
-# ---------- Classes ----------
-class_names = ["Apple Scab", "Black Rot", "Cedar Rust", "Healthy"]
+# ---------- CLASS LABELS ----------
+class_names = [
+    "Apple Scab",
+    "Black Rot",
+    "Cedar Apple Rust",
+    "Healthy"
+]
 
-# ---------- Upload ----------
-uploaded_file = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg"])
+# ---------- UPLOAD IMAGE ----------
+uploaded_file = st.file_uploader("📤 Upload Leaf Image", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
     image = Image.open(uploaded_file)
-    st.image(image, use_container_width=True)
+    st.image(image, caption="Uploaded Image", use_container_width=True)
 
+    # ---------- PREPROCESS ----------
     img = image.resize((224, 224))
     img = np.array(img)
 
+    # remove alpha channel if exists
     if img.shape[-1] == 4:
         img = img[..., :3]
 
     img = img / 255.0
     img = np.expand_dims(img, axis=0)
 
+    # ---------- PREDICTION ----------
     prediction = model.predict(img)
-    label = class_names[np.argmax(prediction)]
-    confidence = np.max(prediction) * 100
+    predicted_class = class_names[np.argmax(prediction)]
+    confidence = float(np.max(prediction)) * 100
 
-    st.success(f"Prediction: {label}")
-    st.info(f"Confidence: {confidence:.2f}%")
+    # ---------- OUTPUT ----------
+    st.success(f"🌱 Predicted Disease: {predicted_class}")
+    st.info(f"🔬 Confidence: {confidence:.2f}%")
+
+st.markdown("---")
+st.caption("Made with ❤️ using Streamlit + TensorFlow")
