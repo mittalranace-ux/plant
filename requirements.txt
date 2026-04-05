@@ -2,4 +2,3 @@ streamlit
 tensorflow-cpu
 numpy
 pillow
-gdown==5.1.0
